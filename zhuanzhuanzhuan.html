@@ -173,10 +173,23 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 	this.lineWidth = this.options.lineWeight/weightDecay;
 	this.options = extend({}, defaults, lineOptions);
 
+	time.add(this);
+
 	this.go = function(detal) {
 		this.disPass = this.disPass + this.options.v*detal;
+
+		if (this.disPass >= this.totalDis) {
+			// arriveCallback 此处可能会改变速度
+		}
+
+		if (this.disPass - this.lineWidth >= this.lineWidth) {
+			// 停止动画 finishCallback
+			time.remove(this);
+		}
+
+
 		this.ctx.save();
-a
+
 		this.ctx.fillStyle = this.options.color;
 		this.ctx.globalAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*(this.disPass/this.totalDis);
 		this.drawBody();
