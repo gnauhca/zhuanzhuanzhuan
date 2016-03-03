@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>zhuanzhuanzhuan</title>
+<script type="text/javascript">
+	var extend = (function() { 
+	    var copyIsArray, 
+	        toString = Object.prototype.toString, 
+	        hasOwn = Object.prototype.hasOwnProperty; 
+	  
+	    class2type = { 
+	        '[object Boolean]' : 'boolean', 
+	        '[object Number]' : 'number', 
+	        '[object String]' : 'string', 
+	        '[object Function]' : 'function', 
+	        '[object Array]' : 'array', 
+	        '[object Date]' : 'date', 
+	        '[object RegExp]' : 'regExp', 
+	        '[object Object]' : 'object' 
+	    }, 
+	  
+	    type = function(obj) { 
+	        return obj == null ? String(obj) : class2type[toString.call(obj)] || "object"; 
+	    }, 
+	  
+	    isWindow = function(obj) { 
+	        return obj && typeof obj === "object" && "setInterval" in obj; 
+	    }, 
+	  
+	    isArray = Array.isArray || function(obj) { 
+	        return type(obj) === "array"; 
+	    }, 
+	  
+	    isPlainObject = function(obj) { 
+	        if (!obj || type(obj) !== "object" || obj.nodeType || isWindow(obj)) { 
+	            return false; 
+	        } 
+	  
+	        if (obj.constructor && !hasOwn.call(obj, "constructor") 
+	                && !hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) { 
+	            return false; 
+	        } 
+	  
+	        var key; 
+	        for (key in obj) { 
+	        } 
+	  
+	        return key === undefined || hasOwn.call(obj, key); 
+	    }, 
+	  
+	    extend = function(deep, target, options) { 
+	        for (name in options) { 
+	            src = target[name]; 
+	            copy = options[name]; 
+	  
+	            if (target === copy) { continue; } 
+	  
+	            if (deep && copy 
+	                    && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) { 
+	                if (copyIsArray) { 
+	                    copyIsArray = false; 
+	                    clone = src && isArray(src) ? src : []; 
+	  
+	                } else { 
+	                    clone = src && isPlainObject(src) ? src : {}; 
+	                } 
+	  
+	                target[name] = extend(deep, clone, copy); 
+	            } else if (copy !== undefined) { 
+	                target[name] = copy; 
+	            } 
+	        } 
+	  
+	        return target; 
+	    }; 
+	  
+	    return extend; 
+	})(); 	
+</script>
+</head>
+<body>
+
+
+<canvas width="800" height="500"></canvas>
+	
+<script type="text/javascript">
+var circleCentre = [300, 150];
+var R = 80;
+var outPoint = [50, 60];
+
+function getTangentPoint(circleCentrePoint, radius, outPoint) {
+
+	var dx = circleCentrePoint[0] - outPoint[0];
+    var dy = circleCentrePoint[1] - outPoint[1];
+    //计算点击处与圆心相对于X轴的夹角
+    var r1 = Math.atan2(dy, dx);
+    //计算点击处与圆心、点击处与切点1这两条线段间的夹角
+    var d1 = Math.sqrt(dx*dx + dy*dy);
+    var r2 = Math.asin(radius/d1);
+    //计算从切点1向圆的垂直直径做垂线形成的直角三角形的一个角
+    var r3 = r1 - r2;
+    //计算坐标系中的角度
+    var r4 = r3 - Math.PI/2;
+    //计算切点1相对于圆心的x、y坐标
+    var x1 = radius * Math.cos(r4);
+    var y1 = radius * Math.sin(r4);
+
+    //计算点击处与切线2相对于X轴的夹角
+    var r5 = Math.PI/2 - r1 - r2;
+    //计算坐标系中的角度
+    var r6 = -r5;
+    //计算切点2相对于圆心的x、y坐标
+    var x2 = radius * Math.cos(r6);
+    var y2 = radius * Math.sin(r6);
+
+    console.log(r4/Math.PI);
+    console.log(r6/Math.PI);
+
+    return {point1: [x1, y1], point2: [x2, y2]};
+}
+var tangentPoint = getTangentPoint(circleCentre, R, outPoint);
+console.log(tangentPoint);
+
+
+var cvs = document.querySelectorAll('canvas')[0];
+var ctx = cvs.getContext('2d');
+
+ctx.strokeStyle="#333333";
+
+ctx.beginPath();
+ctx.arc(circleCentre[0],circleCentre[1],R,0,Math.PI*2,false);
+
+ctx.stroke();
+ctx.beginPath();
+
+ctx.strokeStyle="#ff0000";
+ctx.moveTo(outPoint[0], outPoint[1]);
+ctx.lineTo(circleCentre[0] + tangentPoint.point1[0], circleCentre[1] + tangentPoint.point1[1]);
+
+ctx.stroke();
+ctx.beginPath();
+
+ctx.strokeStyle="#00ff00";
+ctx.moveTo(outPoint[0], outPoint[1]);
+ctx.lineTo(circleCentre[0] - tangentPoint.point2[0], circleCentre[1] - tangentPoint.point2[1]);
+
+
+ctx.stroke();
+
+
+function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallback) {
+	var dx = desPos.x-initPos.x;
+	var dy = desPos.y-initPos.y;
+
+	var weightDecay = 0.03;
+	var defaults = {
+		initAlpha: 0,
+		finalAlpha: 1,
+		lineWeight: 3,
+		color: '#abcdef',
+		v: 20
+	};
+
+
+
+	this.ctx = ctx;
+	this.initPos = initPos;
+	this.desPos = desPos;
+	this.disPass = 0;// 走过的距离
+	this.totalDis = Math.sqrt(dx*dx+dy*dy);// 总距离
+	this.angel = Math.atan2(dy, dx); // 轨迹角度
+	this.lineWidth = this.options.lineWeight/weightDecay;
+	this.options = extend({}, defaults, lineOptions);
+
+	this.go = function(detal) {
+		this.disPass = this.disPass + this.options.v*detal;
+		this.ctx.save();
+a
+		this.ctx.fillStyle = this.options.color;
+		this.ctx.globalAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*(this.disPass/this.totalDis);
+		this.drawBody();
+		this.ctx.restore();
+	}
+
+	this.drawBody = function() {
+
+		var drawing = this.disPass,
+			draw = true,
+			lineWeight = this.options.lineWeight,
+			opacity=1;
+			ratio,
+			drawX,
+			drawY;
+
+		for (var i = 0; i < this.lineWidth; i++) {
+			if (drawing <= 0 || lineWeight <=0) {
+				draw = false;
+				break;
+			}
+			
+			ratio = drawing/this.totalDis;
+			drawX = this.initPos.x + dx*ratio;
+			drawY = this.initPos.y + dy*ratio;
+			ctx.beginPath();
+			ctx.arc(drawX, drawY, lineWeight, 0, Math.PI*2);
+			ctx.fill();
+			drawing--;
+			lineWeight -= weightDecay;
+		}
+	}
+
+	this.destory = function() {
+
+	}
+}
+
+var drawLine = new DrawLine(ctx, {v: 50, color: 'red'}, {x:50,y:50}, {x:600,y:500});
+
+var last = (new Date()).getTime();
+
+function tryit() {
+	ctx.fillStyle = '#ffffff';
+
+	ctx.clearRect(0,0, 800, 500);
+	var now = (new Date()).getTime()
+	detal = (now - last)/1000;
+	drawLine.go(detal);
+	window.requestAnimationFrame(tryit);
+	last = now;
+}
+
+tryit();
+
+</script>
+</body>
+</html>
