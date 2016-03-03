@@ -158,7 +158,7 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 		initAlpha: 0,
 		finalAlpha: 1,
 		lineWeight: 3,
-		color: '#abcdef',
+		color: 'rgba(255,0,0,0.001)',
 		v: 20
 	};
 
@@ -170,8 +170,8 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 	this.disPass = 0;// 走过的距离
 	this.totalDis = Math.sqrt(dx*dx+dy*dy);// 总距离
 	this.angel = Math.atan2(dy, dx); // 轨迹角度
-	this.lineWidth = this.options.lineWeight/weightDecay;
 	this.options = extend({}, defaults, lineOptions);
+	this.lineWidth = this.options.lineWeight/weightDecay;
 
 	time.add(this);
 
@@ -182,7 +182,7 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 			// arriveCallback 此处可能会改变速度
 		}
 
-		if (this.disPass - this.lineWidth >= this.lineWidth) {
+		if (this.disPass - this.lineWidth >= this.totalDis) {
 			// 停止动画 finishCallback
 			time.remove(this);
 		}
@@ -191,7 +191,7 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 		this.ctx.save();
 
 		this.ctx.fillStyle = this.options.color;
-		this.ctx.globalAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*(this.disPass/this.totalDis);
+		this.ctx.globalAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*(this.disPass/this.totalDis); //console.log(this.ctx.globalAlpha);
 		this.drawBody();
 		this.ctx.restore();
 	}
@@ -201,7 +201,7 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 		var drawing = this.disPass,
 			draw = true,
 			lineWeight = this.options.lineWeight,
-			opacity=1;
+			opacityDecay=this.ctx.globalAlpha/this.lineWidth,
 			ratio,
 			drawX,
 			drawY;
@@ -211,15 +211,16 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 				draw = false;
 				break;
 			}
-			
+			drawing--;
+			lineWeight -= weightDecay;
+			if (drawing >= this.totalDis) continue;
+
 			ratio = drawing/this.totalDis;
 			drawX = this.initPos.x + dx*ratio;
 			drawY = this.initPos.y + dy*ratio;
 			ctx.beginPath();
 			ctx.arc(drawX, drawY, lineWeight, 0, Math.PI*2);
 			ctx.fill();
-			drawing--;
-			lineWeight -= weightDecay;
 		}
 	}
 
@@ -228,22 +229,34 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 	}
 }
 
-var drawLine = new DrawLine(ctx, {v: 50, color: 'red'}, {x:50,y:50}, {x:600,y:500});
+time = {
+	last: (new Date()).getTime(),
+	timeBodys: [],
+	add: function(timeBody) {
+		time.timeBodys.push(timeBody);
+	},
+	remove: function(timeBody) {
+		var index = time.timeBodys.indexOf(timeBody); console.log(index);
 
-var last = (new Date()).getTime();
+		if (index !== -1)
+		time.timeBodys.splice(index, 1);
 
-function tryit() {
-	ctx.fillStyle = '#ffffff';
+	},
+	clock: function() {
 
-	ctx.clearRect(0,0, 800, 500);
-	var now = (new Date()).getTime()
-	detal = (now - last)/1000;
-	drawLine.go(detal);
-	window.requestAnimationFrame(tryit);
-	last = now;
+		ctx.clearRect(0,0, 800, 500);
+		var now = (new Date()).getTime()
+		detal = (now - time.last)/1000;
+		time.last = now;
+		time.timeBodys.forEach(function(timeBody) {
+			timeBody.go(detal);
+		});
+		window.requestAnimationFrame(time.clock);
+	}
 }
 
-tryit();
+time.clock();
+var drawLine = new DrawLine(ctx, {v: 50, color: 'red'}, {x:50,y:50}, {x:300,y:300});
 
 </script>
 </body>
