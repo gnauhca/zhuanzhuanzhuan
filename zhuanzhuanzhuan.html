@@ -85,14 +85,12 @@
 <canvas width="800" height="500"></canvas>
 	
 <script type="text/javascript">
-var circleCentre = [300, 150];
-var R = 80;
-var outPoint = [50, 60];
+var ctx = document.querySelectorAll('canvas')[0].getContext('2d');
 
 function getTangentPoint(circleCentrePoint, radius, outPoint) {
 
-	var dx = circleCentrePoint[0] - outPoint[0];
-    var dy = circleCentrePoint[1] - outPoint[1];
+	var dx = circleCentrePoint.x - outPoint.x;
+    var dy = circleCentrePoint.y - outPoint.y;
     //计算点击处与圆心相对于X轴的夹角
     var r1 = Math.atan2(dy, dx);
     //计算点击处与圆心、点击处与切点1这两条线段间的夹角
@@ -114,84 +112,57 @@ function getTangentPoint(circleCentrePoint, radius, outPoint) {
     var x2 = radius * Math.cos(r6);
     var y2 = radius * Math.sin(r6);
 
-    console.log(r4/Math.PI);
-    console.log(r6/Math.PI);
+    //console.log(r4/Math.PI);
+    //console.log(r6/Math.PI);
 
-    return {point1: [x1, y1], point2: [x2, y2]};
+    return {point1: {x: circleCentrePoint.x+x1, y: circleCentrePoint.y+y1}, point2: {x: circleCentrePoint.x-x2, y: circleCentrePoint.y-y2}};
 }
-var tangentPoint = getTangentPoint(circleCentre, R, outPoint);
-console.log(tangentPoint);
 
-
-var cvs = document.querySelectorAll('canvas')[0];
-var ctx = cvs.getContext('2d');
-
-ctx.strokeStyle="#333333";
-
-ctx.beginPath();
-ctx.arc(circleCentre[0],circleCentre[1],R,0,Math.PI*2,false);
-
-ctx.stroke();
-ctx.beginPath();
-
-ctx.strokeStyle="#ff0000";
-ctx.moveTo(outPoint[0], outPoint[1]);
-ctx.lineTo(circleCentre[0] + tangentPoint.point1[0], circleCentre[1] + tangentPoint.point1[1]);
-
-ctx.stroke();
-ctx.beginPath();
-
-ctx.strokeStyle="#00ff00";
-ctx.moveTo(outPoint[0], outPoint[1]);
-ctx.lineTo(circleCentre[0] - tangentPoint.point2[0], circleCentre[1] - tangentPoint.point2[1]);
-
-
-ctx.stroke();
-
-
-function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallback) {
-	var dx = desPos.x-initPos.x;
-	var dy = desPos.y-initPos.y;
+function MovingLine(ctx, options, arriveCallback, finishCallback) {
+	var dx = options.desPos.x-options.initPos.x;
+	var dy = options.desPos.y-options.initPos.y;
 
 	var weightDecay = 0.03;
 	var defaults = {
 		initAlpha: 0,
-		finalAlpha: 1,
+		finalAlpha: 0.3,
 		lineWeight: 3,
-		color: 'rgba(255,0,0,0.001)',
+		initPos: {x:0,y:0},
+		endPos: {x:0,y:0},
+		color: 'rgba(255,0,0,$)',
 		v: 20
 	};
 
-
-
 	this.ctx = ctx;
-	this.initPos = initPos;
-	this.desPos = desPos;
 	this.disPass = 0;// 走过的距离
 	this.totalDis = Math.sqrt(dx*dx+dy*dy);// 总距离
-	this.angel = Math.atan2(dy, dx); // 轨迹角度
-	this.options = extend({}, defaults, lineOptions);
+	this.angle = Math.atan2(dy, dx); // 轨迹角度
+	this.options = extend({}, defaults, options);
 	this.lineWidth = this.options.lineWeight/weightDecay;
 
 	time.add(this);
 
 	this.go = function(detal) {
+		var progress;
+
 		this.disPass = this.disPass + this.options.v*detal;
+		progress = this.disPass/this.totalDis;
 
 		if (this.disPass >= this.totalDis) {
 			// arriveCallback 此处可能会改变速度
+			arriveCallback && arriveCallback();
+			
 		}
 
 		if (this.disPass - this.lineWidth >= this.totalDis) {
 			// 停止动画 finishCallback
-			time.remove(this);
+			this.destory();
 		}
 
 
 		this.ctx.save();
 
-		this.ctx.fillStyle = this.options.color;
-		this.ctx.globalAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*(this.disPass/this.totalDis); //console.log(this.ctx.globalAlpha);
+		this.ctx.globalAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*progress;
 		this.drawBody();
 		this.ctx.restore();
 	}
@@ -199,33 +170,33 @@ function DrawLine(ctx, lineOptions, initPos, desPos, arriveCallback, finishCallb
 	this.drawBody = function() {
 
 		var drawing = this.disPass,
-			draw = true,
 			lineWeight = this.options.lineWeight,
-			opacityDecay=this.ctx.globalAlpha/this.lineWidth,
+			opacityDecay = 1/this.lineWidth,
 			ratio,
 			drawX,
 			drawY;
 
 		for (var i = 0; i < this.lineWidth; i++) {
-			if (drawing <= 0 || lineWeight <=0) {
-				draw = false;
-				break;
-			}
 			drawing--;
 			lineWeight -= weightDecay;
 			if (drawing >= this.totalDis) continue;
 
 			ratio = drawing/this.totalDis;
-			drawX = this.initPos.x + dx*ratio;
-			drawY = this.initPos.y + dy*ratio;
+			drawX = this.options.initPos.x + dx*ratio;
+			drawY = this.options.initPos.y + dy*ratio;
+
+			ctx.fillStyle = this.options.color.replace('$', (1 - opacityDecay*i));
 			ctx.beginPath();
 			ctx.arc(drawX, drawY, lineWeight, 0, Math.PI*2);
 			ctx.fill();
+			if (drawing <= 0) {
+				break;
+			}
 		}
 	}
 
 	this.destory = function() {
-
+		time.remove(this);
 	}
 }
 
@@ -236,7 +207,7 @@ time = {
 		time.timeBodys.push(timeBody);
 	},
 	remove: function(timeBody) {
-		var index = time.timeBodys.indexOf(timeBody); console.log(index);
+		var index = time.timeBodys.indexOf(timeBody); //console.log(index);
 
 		if (index !== -1)
 		time.timeBodys.splice(index, 1);
@@ -255,8 +226,223 @@ time = {
 	}
 }
 
+
+
+var MovingArc = function(ctx, options, arriveCallback, finishCallback) {
+	var defaults = {
+		circleCentre: {x: 0, y: 0},
+		startAngle: 2*Math.PI,
+		endAngle: Math.PI,
+		radius: 100,
+		weightDecay: 0.03,
+		lineWeight: 3,
+		initAlpha: 0,
+		finalAlpha: 0.3,
+		color: 'rgba(255,0,0,$)',
+		v: 50
+	}
+
+	this.options = extend({}, defaults, options);
+	this.ctx = ctx;
+	this.disPass = 0;// 走过的距离
+	this.totalDis = Math.abs(this.options.startAngle-this.options.endAngle) * this.options.radius;// 总距离
+	this.counterclockwise = this.options.startAngle<this.options.endAngle?false:true;// 顺时针or逆时针
+	this.options = extend({}, defaults, options);
+	this.lineWidth = this.options.lineWeight/this.options.weightDecay;
+	time.add(this);
+
+
+
+	this.go = function(detal) {
+		var progress;
+
+		this.disPass = this.disPass + this.options.v*detal;
+		progress = this.disPass/this.totalDis;
+
+		if (this.disPass >= this.totalDis) {
+			// arriveCallback 此处可能会改变速度
+			arriveCallback&&arriveCallback();
+		}
+
+		if (this.disPass - this.lineWidth >= this.totalDis) {
+			// 停止动画 finishCallback
+			this.destory();
+		}
+		this.ctx.save();
+
+		this.ctx.globalAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*progress;
+		this.drawBody();
+		this.ctx.restore();
+	}
+
+	this.drawBody = function() {
+		var drawing = this.disPass,
+			lineWeight = this.options.lineWeight,
+			opacityDecay = 1/this.lineWidth,
+			dir = this.counterclockwise?-1:1,
+			preEngel = dir*drawing/this.options.radius,
+			engel,
+			ratio,
+			drawX,
+			drawY;
+
+		ctx.lineCap = 'round';
+		for (var i = 0; i < this.lineWidth; i++) {
+			drawing--;
+			lineWeight -= this.options.weightDecay;
+
+			engel = dir*drawing/this.options.radius;
+		
+			if (drawing < this.totalDis) {
+				ctx.lineWidth = lineWeight;
+				ctx.strokeStyle = this.options.color.replace('$', (1 - opacityDecay*i));
+				ctx.beginPath();
+				//console.log(this.options.startAngle+preEngel, this.options.startAngle+engel);
+				ctx.arc(this.options.circleCentre.x, this.options.circleCentre.y, this.options.radius, this.options.startAngle+preEngel, this.options.startAngle+engel, !this.counterclockwise);
+				ctx.stroke();				
+			}; 
+			preEngel = engel;
+
+			if (drawing <= 0) {
+				break;
+			}
+		}
+	}
+	this.destory = function() {
+		time.remove(this);
+	}
+
+}
+
+var createMovingStar = function(ctx, startPos, endPos, circleCentre, radius, startCallback, endCallback, options) {
+	var defaults = {
+		laps: 1,//在园中转的圈数
+		lineWidth: 5,
+		startColor: 'rgba(255,0,0)',
+		endColor: 'rgba(0,255,0)',
+	};
+
+	var options = extend({}, defaults, options);
+	var counterclockwise = false//Math.random() < 0.5? false: true; // 在园中是顺时针还是逆时针
+
+	var stPoints = getTangentPoint({x: circleCentre.x, y: circleCentre.y}, radius, startPos);
+	var etPoints = getTangentPoint({x: circleCentre.x, y: circleCentre.y}, radius, endPos);
+
+	var enterPoint = getEnterPoint(startPos, stPoints.point1, stPoints.point2, circleCentre, counterclockwise); // 进入切点坐标
+	var outPoint = getEnterPoint(endPos, etPoints.point1, etPoints.point2, circleCentre, !counterclockwise); // 离开切点坐标
+
+	var startAngle = Math.atan2(enterPoint.y- circleCentre.y, enterPoint.x - circleCentre.x);
+	var endAngle = Math.atan2(outPoint.y- circleCentre.y, outPoint.x - circleCentre.x);
+
+
+	time.add({go:function() {
+		ctx.save();
+
+		ctx.strokeStyle = '#333333';
+		ctx.fillStyle = '#003300';
+		ctx.beginPath();
+		ctx.arc(circleCentre.x,circleCentre.y,radius, 0, Math.PI*2);
+		ctx.stroke();
+
+		ctx.beginPath();
+		ctx.fillStyle = 'red'
+		ctx.arc(enterPoint.x, enterPoint.y, 4, 0, Math.PI*2);
+		ctx.fill();
+		ctx.beginPath();
+		ctx.fillStyle = 'blue'
+		ctx.arc(outPoint.x, outPoint.y, 4, 0, Math.PI*2);
+		ctx.fill();
+		ctx.beginPath();
+		ctx.arc(startPos.x, startPos.y, 4, 0, Math.PI*2);
+		ctx.fill();
+		ctx.beginPath();
+		ctx.arc(endPos.x, endPos.y, 4, 0, Math.PI*2);
+		ctx.fill();
+
+		ctx.restore();
+	}});
+
+	if (counterclockwise) {// 逆时 出去的角度要大于入角度
+		if (endAngle > startAngle) {
+			startAngle += 2*Math.PI
+		}
+	} else {
+		if (endAngle < startAngle) {
+			endAngle += 2*Math.PI
+		}		
+	}
+	endAngle += options.laps * 2*Math.PI * (counterclockwise?-1:1);
+
+	/*console.log(enterPoint,outPoint);
+	console.log(startAngle*180/Math.PI,endAngle*180/Math.PI);
+	return;*/
+
+	new MovingLine(ctx, {
+		v: 200,
+		initPos: startPos,
+		desPos: enterPoint
+	}, function() {
+
+		new MovingArc(ctx, {
+			'circleCentre': circleCentre,
+			'startAngle': startAngle,
+			'endAngle': endAngle,
+			'radius': radius,
+			v: 200
+		}, function() {
+
+			new MovingLine(ctx, {
+				v: 200,
+				initPos: outPoint,
+				desPos: endPos
+			}, null, function() {});
+
+		});
+
+	}, null);
+
+	function getEnterPoint(startPos, tPoint1, tPoint2, circleCentre, counterclockwise) {
+		var angle1 = Math.atan2(tPoint1.y - circleCentre.y, tPoint1.x - circleCentre.x);
+		var angle2 = Math.atan2(tPoint2.y - circleCentre.y, tPoint2.x - circleCentre.x);
+		var sAngle = Math.atan2(startPos.y - circleCentre.y, startPos.x - circleCentre.x);
+
+		angle1 += (angle1<0?Math.PI*2:0);
+		angle2 += (angle2<0?Math.PI*2:0);
+		sAngle += (sAngle<0?Math.PI*2:0);
+
+		if (sAngle > Math.max(angle1, angle2)) {
+			if (angle1 > angle2) {
+				angle2 += 2 * Math.PI;
+			} else {
+				angle1 += 2 * Math.PI;
+			}
+		} else if (sAngle < Math.min(angle1, angle2)) {
+			sAngle += 2 * Math.PI;
+			if (angle1 > angle2) {
+				angle2 += 2 * Math.PI;
+			} else {
+				angle1 += 2 * Math.PI;
+			}
+		}
+
+		//console.log(angle1, sAngle, angle2);
+
+		if (counterclockwise) {
+			return (angle1 > angle2? tPoint2: tPoint1);
+		} else {
+			return (angle1 > angle2? tPoint1: tPoint2);
+		}
+	}
+}
+
 time.clock();
-var drawLine = new DrawLine(ctx, {v: 50, color: 'red'}, {x:50,y:50}, {x:300,y:300});
+
+//var drawLine = new MovingLine(ctx, {v: 50, initPos: {x:50,y:50}, desPos: {x:300,y:300}});
+//var drawLine = new MovingArc(ctx, {});
+
+createMovingStar(ctx, {x: 150,y:300}, {x: 450, y: 300}, {x: 300, y: 300}, 100);
+
+
 
 </script>
 </body>
