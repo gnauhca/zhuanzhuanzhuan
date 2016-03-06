@@ -444,21 +444,24 @@ var AniArc = AniTask.extend(function() {
 			drawX,
 			drawY;
 
-		this.time.ctx.lineCap = 'round';
-
 		this.time.ctx.globalAlpha = this.currentAlpha;
 		for (var i = 0; i < this.lineWidth; i++) { 
-			drawing--;
 			lineWeight -= this.options.weightDecay;
-			engel = dir*drawing/this.options.radius;
+			engel = dir*drawing/this.options.radius + this.options.startAngle;
 			if (drawing < this.totalDis) {
-				this.time.ctx.lineWidth = lineWeight;
-				this.time.ctx.strokeStyle = this.currentColor.replace('$', (1 - opacityDecay*i));
+				this.time.ctx.fillStyle = this.currentColor.replace('$', (1 - opacityDecay*i));
 				this.time.ctx.beginPath();
-				this.time.ctx.arc(this.options.circleCentre.x, this.options.circleCentre.y, this.options.radius, this.options.startAngle+preEngel, this.options.startAngle+engel, !this.counterclockwise);
-				this.time.ctx.stroke();				
+				this.time.ctx.arc(
+					this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
+					this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
+					lineWeight/2, 0, Math.PI *2
+				);
+
+				//this.time.ctx.arc(this.options.circleCentre.x, this.options.circleCentre.y, this.options.radius, this.options.startAngle+preEngel, this.options.startAngle+engel, !this.counterclockwise);
+				this.time.ctx.fill();				
 			}; 
 			preEngel = engel;
+			drawing--;
 			if (drawing <= 0) {
 				break;
 			}
@@ -478,14 +481,14 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 		line1: {
 			initAlpha: 0,
 			finalAlpha: 0.3,
-			initV: 200,
-			finalV: 200			
+			initV: 500,
+			finalV: 500			
 		}, 
 		arc: {
-			radius: 200,
+			radius: 500,
 			initAlpha: 0.3,
 			finalAlpha: 0.3,
-			initV: 200,
+			initV: 500,
 			finalV: 300
 		},
 		line2: {
@@ -626,7 +629,7 @@ function hehe() {
 	var initColor = 'rgba('+parseInt(Math.random()*255)+','+parseInt(Math.random()*255)+','+parseInt(Math.random()*255) + ')';
 	var finalColor = 'rgba('+parseInt(Math.random()*255)+','+parseInt(Math.random()*255)+','+parseInt(Math.random()*255) + ')';
 
-	var lineWeight = parseInt(Math.random()*10 + 3);
+	var lineWeight = parseInt(Math.random()*5 + 3);
 	var weightDecay = lineWeight/100;
 
 	var circleCentre = {x: 400, y: 300};
