@@ -340,9 +340,22 @@ var AniLine = AniTask.extend(function() {
 		var drawing = this.disPass,
 			lineWeight = this.options.lineWeight,
 			opacityDecay = 1/this.lineWidth,
-			ratio,
-			drawX,
-			drawY;
+			ratio = drawing/this.totalDis,
+			drawX = this.options.startPos.x + this.dx*ratio;
+			drawY = this.options.startPos.y + this.dy*ratio;
+
+		// draw light
+		if (!this.arrived) {
+			this.time.ctx.globalAlpha = this.currentAlpha/5;
+			var grd=ctx.createRadialGradient(drawX, drawY,0,drawX, drawY,100);
+			grd.addColorStop(0,this.currentColor.replace('$', 0.6));
+			grd.addColorStop(1,this.currentColor.replace('$', 0));
+
+			this.time.ctx.fillStyle = grd;
+			this.time.ctx.beginPath();
+			this.time.ctx.arc(drawX, drawY, 100, 0, Math.PI *2);
+			this.time.ctx.fill();			
+		}
 
 		this.time.ctx.globalAlpha = this.currentAlpha;
 		for (var i = 0; i < this.lineWidth; i++) {
@@ -439,37 +452,28 @@ var AniArc = AniTask.extend(function() {
 			opacityDecay = 1/this.lineWidth,
 			dir = this.counterclockwise?-1:1,
 			engel = dir*drawing/this.options.radius + this.options.startAngle,
-			ratio,
-			drawX,
-			drawY;
+			drawX = this.options.circleCentre.x + Math.cos(engel)*this.options.radius,
+			drawY = this.options.circleCentre.y + Math.sin(engel)*this.options.radius;
 
-		this.time.ctx.globalAlpha = 0.1;
+		// draw circle
+		this.time.ctx.globalAlpha = 0.05;
 		this.time.ctx.strokeStyle = this.currentColor.replace('$', 1);
 		this.time.ctx.beginPath();
 		this.time.ctx.arc(this.options.circleCentre.x, this.options.circleCentre.y, this.options.radius, 0, Math.PI*2);
 		this.time.ctx.stroke();
 
+		// draw light
+		if (!this.arrived) {
+			this.time.ctx.globalAlpha = this.currentAlpha/5;
+			var grd=ctx.createRadialGradient(drawX, drawY,0,drawX, drawY,100);
+			grd.addColorStop(0,this.currentColor.replace('$', 0.6));
+			grd.addColorStop(1,this.currentColor.replace('$', 0));
 
-		var grd=ctx.createRadialGradient(
-			this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
-			this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
-			0,
-			this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
-			this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
-			100
-		);
-		grd.addColorStop(0,this.currentColor.replace('$', 0.6));
-		grd.addColorStop(1,this.currentColor.replace('$', 0));
-
-		this.time.ctx.fillStyle = grd;
-		this.time.ctx.beginPath();
-		this.time.ctx.arc(
-			this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
-			this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
-			100, 0, Math.PI *2	
-		);
-		this.time.ctx.fill();
-
+			this.time.ctx.fillStyle = grd;
+			this.time.ctx.beginPath();
+			this.time.ctx.arc(drawX, drawY, 100, 0, Math.PI *2);
+			this.time.ctx.fill();			
+		}
 
 
 
@@ -477,14 +481,13 @@ var AniArc = AniTask.extend(function() {
 		for (var i = 0; i < this.lineWidth; i++) { 
 			lineWeight -= this.options.weightDecay;
 			engel = dir*drawing/this.options.radius + this.options.startAngle;
+
 			if (drawing < this.totalDis) {
+				drawX = this.options.circleCentre.x + Math.cos(engel)*this.options.radius;
+				drawY = this.options.circleCentre.y + Math.sin(engel)*this.options.radius;
 				this.time.ctx.fillStyle = this.currentColor.replace('$', (1 - opacityDecay*i));
 				this.time.ctx.beginPath();
-				this.time.ctx.arc(
-					this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
-					this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
-					lineWeight/2, 0, Math.PI *2
-				);
+				this.time.ctx.arc( drawX,  drawY, lineWeight/2, 0, Math.PI *2);
 
 				//this.time.ctx.arc(this.options.circleCentre.x, this.options.circleCentre.y, this.options.radius, this.options.startAngle+preEngel, this.options.startAngle+engel, !this.counterclockwise);
 				this.time.ctx.fill();				
@@ -508,7 +511,7 @@ var AniCircle = AniTask.extend(function() {
 		this.super(time);
 		this.options = extend({}, defaults, options);
 		this.disPass = 0;
-		this.totalDis = 100;
+		this.totalDis = 30;
 		this.arrived = false;
 	}
 
@@ -547,21 +550,21 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 		line1: {
 			initAlpha: 0,
 			finalAlpha: 0.3,
-			initV: 500,
-			finalV: 500			
+			initV: 200,
+			finalV: 200			
 		}, 
 		arc: {
-			radius: 500,
+			radius: 200,
 			initAlpha: 0.3,
 			finalAlpha: 0.3,
-			initV: 500,
-			finalV: 300
+			initV: 200,
+			finalV: 400
 		},
 		line2: {
 			initAlpha: 0.3,
 			finalAlpha: 0,
-			initV: 300,
-			finalV: 300			
+			initV: 400,
+			finalV: 400			
 		}, 
 	};
 
@@ -700,8 +703,8 @@ function hehe() {
 	var initColor = 'rgba('+parseInt(Math.random()*255)+','+parseInt(Math.random()*255)+','+parseInt(Math.random()*255) + ')';
 	var finalColor = 'rgba('+parseInt(Math.random()*255)+','+parseInt(Math.random()*255)+','+parseInt(Math.random()*255) + ')';
 
-	var lineWeight = parseInt(Math.random()*5 + 3);
-	var weightDecay = lineWeight/100;
+	var lineWeight = parseInt(Math.random()*3 + 3);
+	var weightDecay = lineWeight/150;
 
 	var circleCentre = {x: Math.random()*600 + 100, y: Math.random()*300 + 100};
 	var radius = parseInt((Math.random() * 200 + 50)/20) * 20;
@@ -723,7 +726,7 @@ function hehe() {
 	setTimeout(function() {
 		//console.log(time.timeBodys.length);
 		hehe();
-	}, parseInt(Math.random()*500));
+	}, parseInt(Math.random()*1000));
 }
 
 hehe();
