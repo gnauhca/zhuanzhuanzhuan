@@ -714,7 +714,7 @@ function hehe() {
 
 	//console.log(startPos, endPos, circleCentre, radius);
 	//console.log(time.timeBodys);
-	if (time.timeBodys.length < 200)
+	if (time.timeBodys.length < 30)
 	createMovingStar(time, startPos, endPos, circleCentre, radius, {
 		'counterclockwise': Math.random() > 0.5 ? false: true,
 		'laps': parseInt(Math.random() * 2),
@@ -726,7 +726,7 @@ function hehe() {
 	setTimeout(function() {
 		//console.log(time.timeBodys.length);
 		hehe();
-	}, parseInt(Math.random()*1000));
+	}, parseInt(Math.random()*3000));
 }
 
 hehe();
