@@ -79,7 +79,7 @@
 	})(); 	
 </script>
 </head>
-<body>
+<body style="background: #000;">
 
 
 <canvas width="800" height="500" style="display:block; margin:0 auto;"></canvas>
@@ -438,11 +438,40 @@ var AniArc = AniTask.extend(function() {
 			lineWeight = this.options.lineWeight,
 			opacityDecay = 1/this.lineWidth,
 			dir = this.counterclockwise?-1:1,
-			preEngel = dir*drawing/this.options.radius,
-			engel,
+			engel = dir*drawing/this.options.radius + this.options.startAngle,
 			ratio,
 			drawX,
 			drawY;
+
+		this.time.ctx.globalAlpha = 0.1;
+		this.time.ctx.strokeStyle = this.currentColor.replace('$', 1);
+		this.time.ctx.beginPath();
+		this.time.ctx.arc(this.options.circleCentre.x, this.options.circleCentre.y, this.options.radius, 0, Math.PI*2);
+		this.time.ctx.stroke();
+
+
+		var grd=ctx.createRadialGradient(
+			this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
+			this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
+			0,
+			this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
+			this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
+			100
+		);
+		grd.addColorStop(0,this.currentColor.replace('$', 0.6));
+		grd.addColorStop(1,this.currentColor.replace('$', 0));
+
+		this.time.ctx.fillStyle = grd;
+		this.time.ctx.beginPath();
+		this.time.ctx.arc(
+			this.options.circleCentre.x + Math.cos(engel)*this.options.radius, 
+			this.options.circleCentre.y + Math.sin(engel)*this.options.radius,
+			100, 0, Math.PI *2	
+		);
+		this.time.ctx.fill();
+
+
+
 
 		this.time.ctx.globalAlpha = this.currentAlpha;
 		for (var i = 0; i < this.lineWidth; i++) { 
@@ -469,6 +498,43 @@ var AniArc = AniTask.extend(function() {
 	}
 });
 
+var AniCircle = AniTask.extend(function() {
+	var defaults = {
+		pos: {x:0, y:0},
+		color: 'rgba(210, 230, 250)'
+	};
+
+	this.constructor = function(time, options) {
+		this.super(time);
+		this.options = extend({}, defaults, options);
+		this.disPass = 0;
+		this.totalDis = 100;
+		this.arrived = false;
+	}
+
+	this.clock = function() {
+		this.disPass += 0.5;
+		if (this.disPass > this.totalDis) {
+			this.finish();
+			return;
+		}
+
+		if (!this.arrived&&this.disPass > 10) {
+			this.arrived = true;
+			this.next();
+		}
+
+		this.time.ctx.globalAlpha = (1 - (this.disPass/this.totalDis))/2;
+		this.time.ctx.strokeStyle = this.options.color.replace(')', ', 1)');
+		this.time.ctx.fillStyle = this.options.color.replace(')', ', 1)');
+		this.time.ctx.beginPath();
+		this.time.ctx.arc(this.options.pos.x, this.options.pos.y, this.disPass/2, 0, Math.PI*2);
+		this.time.ctx.stroke();
+		this.time.ctx.beginPath();
+		this.time.ctx.arc(this.options.pos.x, this.options.pos.y, this.disPass/2.4, 0, Math.PI*2);
+		this.time.ctx.fill();
+	}
+});
 
 var createMovingStar = function(time, startPos, endPos, circleCentre, radius, options) {
 	var defaults = {
@@ -550,6 +616,9 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 	console.log(startAngle*180/Math.PI,endAngle*180/Math.PI);
 	return;*/
 
+	var circle1 = new AniCircle(time, {pos: startPos, color: options.initColor});
+	var circle2 = new AniCircle(time, {pos: endPos, color: options.finalColor});
+
 	var line1 = new AniLine(time, extend({}, options.line1, {
 		'startPos': startPos,
 		'endPos': enterPoint,
@@ -579,9 +648,11 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 		'weightDecay': options.weightDecay
 	}));
 
+	circle1.setNext(line1);
 	line1.setNext(arc);
 	arc.setNext(line2);
-	line1.start();
+	line2.setNext(circle2);
+	circle1.start();
 
 	function getEnterPoint(startPos, tPoint1, tPoint2, circleCentre, counterclockwise) {
 		var angle1 = Math.atan2(tPoint1.y - circleCentre.y, tPoint1.x - circleCentre.x);
@@ -619,10 +690,10 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 //var drawLine = new MovingLine(ctx, {v: 50, startPos: {x:50,y:50}, desPos: {x:300,y:300}});
 //var drawLine = new MovingArc(ctx, {});
 
-createMovingStar(time, {x: 300,y:100}, {x: 450, y: 100}, {x: 300, y: 300}, 100, {
+/*createMovingStar(time, {x: 300,y:100}, {x: 450, y: 100}, {x: 300, y: 300}, 100, {
 	initColor: 'rgba(255,0,0)',
 	finalColor: 'rgba(111,133,155)'
-});
+});*/
 
 
 function hehe() {
@@ -632,29 +703,35 @@ function hehe() {
 	var lineWeight = parseInt(Math.random()*5 + 3);
 	var weightDecay = lineWeight/100;
 
-	var circleCentre = {x: 400, y: 300};
-	var radius = parseInt(Math.random() * 200 + 20);
+	var circleCentre = {x: Math.random()*600 + 100, y: Math.random()*300 + 100};
+	var radius = parseInt((Math.random() * 200 + 50)/20) * 20;
 
 	var startPos = {x: parseInt((circleCentre.x-radius)-Math.random()*300), y: parseInt(Math.random()*500)};
 	var endPos = {x: parseInt((circleCentre.x+radius)+Math.random()*300), y: parseInt(Math.random()*500)};
 
 	//console.log(startPos, endPos, circleCentre, radius);
 	//console.log(time.timeBodys);
+	if (time.timeBodys.length < 200)
 	createMovingStar(time, startPos, endPos, circleCentre, radius, {
 		'counterclockwise': Math.random() > 0.5 ? false: true,
-		'laps': parseInt(Math.random() * 3+1),
+		'laps': parseInt(Math.random() * 2),
 		'initColor': initColor,
 		'finalColor': finalColor,
 		'lineWeight': lineWeight,
 		'weightDecay': weightDecay
 	});
-	setTimeout(hehe, parseInt(Math.random()*1000));
+	setTimeout(function() {
+		//console.log(time.timeBodys.length);
+		hehe();
+	}, parseInt(Math.random()*500));
 }
 
 hehe();
 //createMovingStar(ctx, {x: 150,y:100}, {x: 350, y: 400}, {x: 300, y: 300}, 50);
 
 //createMovingStar(ctx, {x: 50,y:500}, {x: 450, y: 500}, {x: 300, y: 300}, 100);
+
+
 
 
 
