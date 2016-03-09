@@ -3,86 +3,89 @@
 <head>
 	<meta charset="UTF-8">
 	<title>zhuanzhuanzhuan</title>
-<script type="text/javascript">
-	var extend = (function() { 
-	    var copyIsArray, 
-	        toString = Object.prototype.toString, 
-	        hasOwn = Object.prototype.hasOwnProperty; 
-	  
-	    class2type = { 
-	        '[object Boolean]' : 'boolean', 
-	        '[object Number]' : 'number', 
-	        '[object String]' : 'string', 
-	        '[object Function]' : 'function', 
-	        '[object Array]' : 'array', 
-	        '[object Date]' : 'date', 
-	        '[object RegExp]' : 'regExp', 
-	        '[object Object]' : 'object' 
-	    }, 
-	  
-	    type = function(obj) { 
-	        return obj == null ? String(obj) : class2type[toString.call(obj)] || "object"; 
-	    }, 
-	  
-	    isWindow = function(obj) { 
-	        return obj && typeof obj === "object" && "setInterval" in obj; 
-	    }, 
-	  
-	    isArray = Array.isArray || function(obj) { 
-	        return type(obj) === "array"; 
-	    }, 
-	  
-	    isPlainObject = function(obj) { 
-	        if (!obj || type(obj) !== "object" || obj.nodeType || isWindow(obj)) { 
-	            return false; 
-	        } 
-	  
-	        if (obj.constructor && !hasOwn.call(obj, "constructor") 
-	                && !hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) { 
-	            return false; 
-	        } 
-	  
-	        var key; 
-	        for (key in obj) { 
-	        } 
-	  
-	        return key === undefined || hasOwn.call(obj, key); 
-	    }, 
-	  
-	    extend = function(deep, target, options) { 
-	        for (name in options) { 
-	            src = target[name]; 
-	            copy = options[name]; 
-	  
-	            if (target === copy) { continue; } 
-	  
-	            if (deep && copy 
-	                    && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) { 
-	                if (copyIsArray) { 
-	                    copyIsArray = false; 
-	                    clone = src && isArray(src) ? src : []; 
-	  
-	                } else { 
-	                    clone = src && isPlainObject(src) ? src : {}; 
-	                } 
-	  
-	                target[name] = extend(deep, clone, copy); 
-	            } else if (copy !== undefined) { 
-	                target[name] = copy; 
-	            } 
-	        } 
-	  
-	        return target; 
-	    }; 
-	  
-	    return extend; 
-	})(); 	
-</script>
+	<script type="text/javascript">
+		var extend = (function() { 
+		    var copyIsArray, 
+		        toString = Object.prototype.toString, 
+		        hasOwn = Object.prototype.hasOwnProperty; 
+		  
+		    class2type = { 
+		        '[object Boolean]' : 'boolean', 
+		        '[object Number]' : 'number', 
+		        '[object String]' : 'string', 
+		        '[object Function]' : 'function', 
+		        '[object Array]' : 'array', 
+		        '[object Date]' : 'date', 
+		        '[object RegExp]' : 'regExp', 
+		        '[object Object]' : 'object' 
+		    }, 
+		  
+		    type = function(obj) { 
+		        return obj == null ? String(obj) : class2type[toString.call(obj)] || "object"; 
+		    }, 
+		  
+		    isWindow = function(obj) { 
+		        return obj && typeof obj === "object" && "setInterval" in obj; 
+		    }, 
+		  
+		    isArray = Array.isArray || function(obj) { 
+		        return type(obj) === "array"; 
+		    }, 
+		  
+		    isPlainObject = function(obj) { 
+		        if (!obj || type(obj) !== "object" || obj.nodeType || isWindow(obj)) { 
+		            return false; 
+		        } 
+		  
+		        if (obj.constructor && !hasOwn.call(obj, "constructor") 
+		                && !hasOwn.call(obj.constructor.prototype, "isPrototypeOf")) { 
+		            return false; 
+		        } 
+		  
+		        var key; 
+		        for (key in obj) { 
+		        } 
+		  
+		        return key === undefined || hasOwn.call(obj, key); 
+		    }, 
+		  
+		    extend = function(deep, target, options) { 
+		        for (name in options) { 
+		            src = target[name]; 
+		            copy = options[name]; 
+		  
+		            if (target === copy) { continue; } 
+		  
+		            if (deep && copy 
+		                    && (isPlainObject(copy) || (copyIsArray = isArray(copy)))) { 
+		                if (copyIsArray) { 
+		                    copyIsArray = false; 
+		                    clone = src && isArray(src) ? src : []; 
+		  
+		                } else { 
+		                    clone = src && isPlainObject(src) ? src : {}; 
+		                } 
+		  
+		                target[name] = extend(deep, clone, copy); 
+		            } else if (copy !== undefined) { 
+		                target[name] = copy; 
+		            } 
+		        } 
+		  
+		        return target; 
+		    }; 
+		  
+		    return extend; 
+		})(); 	
+	</script>
+<style type="text/css">
+html, body {background: #000; width:100%; height: 100%; position: relative;}	
+</style>
 </head>
-<body style="background: #000;">
+<body>
 
 
-<canvas width="800" height="500" style="display:block; margin:0 auto;"></canvas>
+<canvas></canvas>
 	
 <script type="text/javascript">
 
@@ -191,10 +194,20 @@ function getTangentPoint(circleCentrePoint, radius, outPoint) {
     });
 }
 
+
+
+var cvs = document.querySelectorAll('canvas')[0]
+var cvsWidth = document.body.clientWidth || document.documentElement.clientWidth;
+var cvsHeight = document.body.clientHeight || document.documentElement.clientHeight;
+console.log(cvsWidth, cvsHeight);
+cvs.width = cvsWidth;
+cvs.height = cvsHeight;
+var ctx = cvs.getContext('2d');
+
+
 /*
  * 时间对象
  */
-var ctx = document.querySelectorAll('canvas')[0].getContext('2d');
 time = {
 	ctx: ctx,
 	last: (new Date()).getTime(),
@@ -215,7 +228,7 @@ time = {
 		detal = (now - time.last)/1000;
 		time.last = now;
 
-		ctx.clearRect(0,0, 800, 500);
+		ctx.clearRect(0,0, cvs.width, cvs.height);
 		time.timeBodys.forEach(function(timeBody) {
 			ctx.save();
 			timeBody.clock(detal);
@@ -346,7 +359,7 @@ var AniLine = AniTask.extend(function() {
 
 		// draw light
 		if (!this.arrived) {
-			this.time.ctx.globalAlpha = this.currentAlpha/5;
+			this.time.ctx.globalAlpha = this.currentAlpha;
 			var grd=ctx.createRadialGradient(drawX, drawY,0,drawX, drawY,100);
 			grd.addColorStop(0,this.currentColor.replace('$', 0.6));
 			grd.addColorStop(1,this.currentColor.replace('$', 0));
@@ -451,9 +464,9 @@ var AniArc = AniTask.extend(function() {
 			lineWeight = this.options.lineWeight,
 			opacityDecay = 1/this.lineWidth,
 			dir = this.counterclockwise?-1:1,
-			engel = dir*drawing/this.options.radius + this.options.startAngle,
-			drawX = this.options.circleCentre.x + Math.cos(engel)*this.options.radius,
-			drawY = this.options.circleCentre.y + Math.sin(engel)*this.options.radius;
+			angle = dir*drawing/this.options.radius + this.options.startAngle,
+			drawX = this.options.circleCentre.x + Math.cos(angle)*this.options.radius,
+			drawY = this.options.circleCentre.y + Math.sin(angle)*this.options.radius;
 
 		// draw circle
 		this.time.ctx.globalAlpha = 0.05;
@@ -464,7 +477,7 @@ var AniArc = AniTask.extend(function() {
 
 		// draw light
 		if (!this.arrived) {
-			this.time.ctx.globalAlpha = this.currentAlpha/5;
+			this.time.ctx.globalAlpha = this.currentAlpha;
 			var grd=ctx.createRadialGradient(drawX, drawY,0,drawX, drawY,100);
 			grd.addColorStop(0,this.currentColor.replace('$', 0.6));
 			grd.addColorStop(1,this.currentColor.replace('$', 0));
@@ -480,19 +493,17 @@ var AniArc = AniTask.extend(function() {
 		this.time.ctx.globalAlpha = this.currentAlpha;
 		for (var i = 0; i < this.lineWidth; i++) { 
 			lineWeight -= this.options.weightDecay;
-			engel = dir*drawing/this.options.radius + this.options.startAngle;
+			angle = dir*drawing/this.options.radius + this.options.startAngle;
 
 			if (drawing < this.totalDis) {
-				drawX = this.options.circleCentre.x + Math.cos(engel)*this.options.radius;
-				drawY = this.options.circleCentre.y + Math.sin(engel)*this.options.radius;
+				drawX = this.options.circleCentre.x + Math.cos(angle)*this.options.radius;
+				drawY = this.options.circleCentre.y + Math.sin(angle)*this.options.radius;
 				this.time.ctx.fillStyle = this.currentColor.replace('$', (1 - opacityDecay*i));
 				this.time.ctx.beginPath();
 				this.time.ctx.arc( drawX,  drawY, lineWeight/2, 0, Math.PI *2);
-
-				//this.time.ctx.arc(this.options.circleCentre.x, this.options.circleCentre.y, this.options.radius, this.options.startAngle+preEngel, this.options.startAngle+engel, !this.counterclockwise);
 				this.time.ctx.fill();				
 			}; 
-			preEngel = engel;
+			preEngel = angle;
 			drawing--;
 			if (drawing <= 0) {
 				break;
@@ -549,19 +560,19 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 		finalColor: 'rgba(255,0,0)',		
 		line1: {
 			initAlpha: 0,
-			finalAlpha: 0.3,
+			finalAlpha: 0.5,
 			initV: 200,
 			finalV: 200			
 		}, 
 		arc: {
 			radius: 200,
-			initAlpha: 0.3,
-			finalAlpha: 0.3,
+			initAlpha: 0.5,
+			finalAlpha: 0.5,
 			initV: 200,
 			finalV: 400
 		},
 		line2: {
-			initAlpha: 0.3,
+			initAlpha: 0.5,
 			finalAlpha: 0,
 			initV: 400,
 			finalV: 400			
@@ -569,40 +580,20 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 	};
 
 	var options = extend({}, defaults, options);
+
+	// startPos 和圆的两个切点 
 	var stPoints = getTangentPoint({x: circleCentre.x, y: circleCentre.y}, radius, startPos);
+	// endPos 和圆的两个切点 
 	var etPoints = getTangentPoint({x: circleCentre.x, y: circleCentre.y}, radius, endPos);
-	var enterPoint = getEnterPoint(startPos, stPoints.point1, stPoints.point2, circleCentre, options.counterclockwise); // 进入切点坐标
-	var outPoint = getEnterPoint(endPos, etPoints.point1, etPoints.point2, circleCentre, !options.counterclockwise); // 离开切点坐标
+
+	// 进入切点坐标，根据顺时针逆时针选一个切点
+	var enterPoint = getEnterPoint(startPos, stPoints.point1, stPoints.point2, circleCentre, options.counterclockwise); 
+	// 离开切点坐标，根据顺时针逆时针选一个切点
+	var outPoint = getEnterPoint(endPos, etPoints.point1, etPoints.point2, circleCentre, !options.counterclockwise); 
+
+	// 根据切点得到的圆路径的起始结束角度
 	var startAngle = Math.atan2(enterPoint.y- circleCentre.y, enterPoint.x - circleCentre.x);
 	var endAngle = Math.atan2(outPoint.y- circleCentre.y, outPoint.x - circleCentre.x);
-
-
-	/*time.add({go:function() {
-		ctx.save();
-
-		ctx.strokeStyle = '#333333';
-		ctx.fillStyle = '#003300';
-		ctx.beginPath();
-		ctx.arc(circleCentre.x,circleCentre.y,radius, 0, Math.PI*2);
-		ctx.stroke();
-
-		ctx.beginPath();
-		ctx.fillStyle = 'red'
-		ctx.arc(enterPoint.x, enterPoint.y, 4, 0, Math.PI*2);
-		ctx.fill();
-		ctx.beginPath();
-		ctx.fillStyle = 'blue'
-		ctx.arc(outPoint.x, outPoint.y, 4, 0, Math.PI*2);
-		ctx.fill();
-		ctx.beginPath();
-		ctx.arc(startPos.x, startPos.y, 4, 0, Math.PI*2);
-		ctx.fill();
-		ctx.beginPath();
-		ctx.arc(endPos.x, endPos.y, 4, 0, Math.PI*2);
-		ctx.fill();
-
-		ctx.restore();
-	}});*/
 
 	if (options.counterclockwise) {// 逆时 出去的角度要大于入角度
 		if (endAngle > startAngle) {
@@ -690,15 +681,6 @@ var createMovingStar = function(time, startPos, endPos, circleCentre, radius, op
 }
 
 
-//var drawLine = new MovingLine(ctx, {v: 50, startPos: {x:50,y:50}, desPos: {x:300,y:300}});
-//var drawLine = new MovingArc(ctx, {});
-
-/*createMovingStar(time, {x: 300,y:100}, {x: 450, y: 100}, {x: 300, y: 300}, 100, {
-	initColor: 'rgba(255,0,0)',
-	finalColor: 'rgba(111,133,155)'
-});*/
-
-
 function hehe() {
 	var initColor = 'rgba('+parseInt(Math.random()*255)+','+parseInt(Math.random()*255)+','+parseInt(Math.random()*255) + ')';
 	var finalColor = 'rgba('+parseInt(Math.random()*255)+','+parseInt(Math.random()*255)+','+parseInt(Math.random()*255) + ')';
@@ -706,8 +688,8 @@ function hehe() {
 	var lineWeight = parseInt(Math.random()*3 + 3);
 	var weightDecay = lineWeight/150;
 
-	var circleCentre = {x: Math.random()*600 + 100, y: Math.random()*300 + 100};
-	var radius = parseInt((Math.random() * 200 + 50)/20) * 20;
+	var circleCentre = {x: Math.random()*(cvs.width-200)+100, y: Math.random()*(cvs.height-200)+100};
+	var radius = parseInt((Math.random() * 200 + 100)/20) * 20;
 
 	var startPos = {x: parseInt((circleCentre.x-radius)-Math.random()*300), y: parseInt(Math.random()*500)};
 	var endPos = {x: parseInt((circleCentre.x+radius)+Math.random()*300), y: parseInt(Math.random()*500)};
@@ -726,16 +708,15 @@ function hehe() {
 	setTimeout(function() {
 		//console.log(time.timeBodys.length);
 		hehe();
-	}, parseInt(Math.random()*3000));
+	}, parseInt(Math.random()*1000));
 }
 
 hehe();
-//createMovingStar(ctx, {x: 150,y:100}, {x: 350, y: 400}, {x: 300, y: 300}, 50);
 
-//createMovingStar(ctx, {x: 50,y:500}, {x: 450, y: 500}, {x: 300, y: 300}, 100);
-
-
-
+/*createMovingStar(time, {x: 300,y:100}, {x: 450, y: 100}, {x: 300, y: 300}, 100, {
+	initColor: 'rgba(255,0,0)',
+	finalColor: 'rgba(111,133,155)'
+});*/
 
 
 </script>
