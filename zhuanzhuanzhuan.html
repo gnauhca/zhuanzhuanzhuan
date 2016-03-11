@@ -84,7 +84,8 @@ html, body {background: #000; width:100%; height: 100%; position: relative;}
 </head>
 <body>
 
-
+<div id="frameInfo" style="position: fixed; top: 10px; left: 10px; color: #fff; font-size: 30px;"></div>
+<!-- <div style="position: fixed; z-index: 10; top: 50px; left: 50px; width: 100%; height: 100%; background: #fff "></div> -->
 <canvas></canvas>
 	
 <script type="text/javascript">
@@ -204,12 +205,20 @@ cvs.width = cvsWidth;
 cvs.height = cvsHeight;
 var ctx = cvs.getContext('2d');
 
+var mcvs = document.createElement('canvas');
+
+mcvs.width = cvsWidth;
+mcvs.height = cvsHeight;
+
+var mctx = mcvs.getContext('2d');
 
 /*
  * 时间对象
  */
 time = {
-	ctx: ctx,
+	mctx: ctx,
+	mcvs: mcvs,
+	ctx: mctx,
 	last: (new Date()).getTime(),
 	ani: 1,
 	timeBodys: [],
@@ -225,43 +234,47 @@ time = {
 	clock: function() {
 
 		var now = (new Date()).getTime()
-		detal = (now - time.last)/1000;
+		detal = (now - time.last)/1000;  frameInfo.innerHTML = parseInt(1000/(now - time.last));
 		time.last = now;
 
-		ctx.clearRect(0,0, cvs.width, cvs.height);
+		time.ctx.clearRect(0,0, cvs.width, cvs.height);
+		time.mctx.clearRect(0,0, cvs.width, cvs.height);
 		time.timeBodys.forEach(function(timeBody) {
-			ctx.save();
+			time.ctx.save();
 			timeBody.clock(detal);
-			ctx.restore();
+			time.ctx.restore();
 		});
+		time.mctx.drawImage(mcvs, 0, 0);
 		time.ani = window.requestAnimationFrame(time.clock);
 	}
 }
 time.clock();
 
+// 离屏canvas 池
+var offCvsPool = {
+	offCvses: [],
+	getCvs: function() {
+		var cvs;
+		if (offCvsPool.offCvses.length) {
+			cvs = offCvsPool.offCvses.pop();
+		}
 
-var AniStuff = Class.extend(function() {
+		cvs = document.createElement('canvas');
+
+		cvs.width = cvs.height = 0;
+		return cvs;
+	},
+	removeCvs: function(cvs) {
+		offCvsPool.offCvses.push(cvs);
+	}
+}
+
+var AniTask = Class.extend(function() {
 	this.constructor = function(time) {
 		this.time = time;
+		this.offCvs = offCvsPool.getCvs();
 	}
 
-	this.aniStart = function() {
-		this.time.add(this);
-	}
-
-	this.clock = function(detal) {}
-
-	this.aniStop = function() {
-		setTimeout((function(that) {
-			return function() {
-				that.time.remove(that);
-			}
-		})(this), 0);
-	}
-});
-
-
-var AniTask = AniStuff.extend(function() {
 	this.setNext = function(task) {
 		this.nextTask = task;
 	}
@@ -271,12 +284,19 @@ var AniTask = AniStuff.extend(function() {
 		this.nextTask.start();
 	}
 
+	this.clock = function(detal) {}
+
 	this.start = function() {
-		this.aniStart();
+		this.time.add(this);
 	}
 
 	this.finish = function() {
-		this.aniStop();
+		var that = this;
+
+		setTimeout(function() {
+			offCvsPool.removeCvs(that.offCvs);
+			that.time.remove(that);
+		}, 0);
 	}
 });
 
@@ -321,17 +341,6 @@ var AniLine = AniTask.extend(function() {
 		progress = this.disPass/this.totalDis;
 		progress = progress<1?progress:1;
 
-		if (!this.arrived&&this.disPass >= this.totalDis) {
-			// arriveCallback 此处可能会改变速度
-			this.next();
-			this.arrived = true;
-		}
-
-		if (this.disPass - this.lineWidth >= this.totalDis) {
-			// 停止动画 finishCallback
-			this.aniStop(); // extend from AniStuff
-			return;
-		}
 
 		this.currentAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*progress;
 		this.currentV = this.options.initV + (this.options.finalV-this.options.initV)*progress;
@@ -346,7 +355,19 @@ var AniLine = AniTask.extend(function() {
 			color.push('$')
 			return color.join(',');
 		});
+
 		this.draw();
+		if (!this.arrived&&this.disPass >= this.totalDis) {
+			// arriveCallback 此处可能会改变速度
+			this.next();
+			this.arrived = true;
+		}
+
+		if (this.disPass - this.lineWidth >= this.totalDis) {
+			// 停止动画 finishCallback
+			this.finish(); // extend from AniStuff
+			return;
+		}
 	}
 
 	this.draw = function() {
@@ -430,17 +451,6 @@ var AniArc = AniTask.extend(function() {
 		progress = (this.disPass-this.lineWidth)/(this.totalDis-this.lineWidth);
 		progress = progress<1?(progress<0?0:progress):1;
 
-		if (!this.arrived&&this.disPass >= this.totalDis) {
-			// arriveCallback 此处可能会改变速度
-			this.next();
-			this.arrived = true;
-		}
-
-		if (this.disPass - this.lineWidth >= this.totalDis) {
-			// 停止动画 finishCallback
-			this.aniStop(); // extend from AniStuff
-			return;
-		}
 
 		this.currentAlpha = this.options.initAlpha + (this.options.finalAlpha-this.options.initAlpha)*progress;
 		this.currentV = this.options.initV + (this.options.finalV-this.options.initV)*progress;
@@ -457,6 +467,17 @@ var AniArc = AniTask.extend(function() {
 		});
 
 		this.draw();
+		if (!this.arrived&&this.disPass >= this.totalDis) {
+			// arriveCallback 此处可能会改变速度
+			this.next();
+			this.arrived = true;
+		}
+
+		if (this.disPass - this.lineWidth >= this.totalDis) {
+			// 停止动画 finishCallback
+			this.finish(); // extend from AniStuff
+			return;
+		}
 	}
 
 	this.draw = function() {
@@ -528,6 +549,18 @@ var AniCircle = AniTask.extend(function() {
 
 	this.clock = function() {
 		this.disPass += 0.5;
+
+		var alpha = (1 - (this.disPass/this.totalDis))/2;
+		this.time.ctx.globalAlpha = alpha > 0 ? alpha : 0;
+		this.time.ctx.strokeStyle = this.options.color.replace(')', ', 1)');
+		this.time.ctx.fillStyle = this.options.color.replace(')', ', 1)');
+		this.time.ctx.beginPath();
+		this.time.ctx.arc(this.options.pos.x, this.options.pos.y, this.disPass/2, 0, Math.PI*2);
+		this.time.ctx.stroke();
+		this.time.ctx.beginPath();
+		this.time.ctx.arc(this.options.pos.x, this.options.pos.y, this.disPass/2.4, 0, Math.PI*2);
+		this.time.ctx.fill();
+
 		if (this.disPass > this.totalDis) {
 			this.finish();
 			return;
@@ -537,16 +570,6 @@ var AniCircle = AniTask.extend(function() {
 			this.arrived = true;
 			this.next();
 		}
-
-		this.time.ctx.globalAlpha = (1 - (this.disPass/this.totalDis))/2;
-		this.time.ctx.strokeStyle = this.options.color.replace(')', ', 1)');
-		this.time.ctx.fillStyle = this.options.color.replace(')', ', 1)');
-		this.time.ctx.beginPath();
-		this.time.ctx.arc(this.options.pos.x, this.options.pos.y, this.disPass/2, 0, Math.PI*2);
-		this.time.ctx.stroke();
-		this.time.ctx.beginPath();
-		this.time.ctx.arc(this.options.pos.x, this.options.pos.y, this.disPass/2.4, 0, Math.PI*2);
-		this.time.ctx.fill();
 	}
 });
 
@@ -696,7 +719,7 @@ function hehe() {
 
 	//console.log(startPos, endPos, circleCentre, radius);
 	//console.log(time.timeBodys);
-	if (time.timeBodys.length < 30)
+	//if (time.timeBodys.length < 30)
 	createMovingStar(time, startPos, endPos, circleCentre, radius, {
 		'counterclockwise': Math.random() > 0.5 ? false: true,
 		'laps': parseInt(Math.random() * 2),
@@ -705,13 +728,14 @@ function hehe() {
 		'lineWeight': lineWeight,
 		'weightDecay': weightDecay
 	});
-	setTimeout(function() {
+	/*setTimeout(function() {
 		//console.log(time.timeBodys.length);
 		hehe();
-	}, parseInt(Math.random()*1000));
+	}, parseInt(Math.random()*30));*/
 }
-
-hehe();
+for (var i = 0; i < 100; i++) {
+	hehe();
+}
 
 /*createMovingStar(time, {x: 300,y:100}, {x: 450, y: 100}, {x: 300, y: 300}, 100, {
 	initColor: 'rgba(255,0,0)',
