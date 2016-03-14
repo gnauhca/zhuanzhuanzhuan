@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>star</title>
+<style type="text/css">
+* {
+	margin: 0;
+	padding: 0;
+}	
+body {
+	background: #000;
+}
+</style>
+</head>
+<body>
+
+<canvas width="800" height="400"></canvas>
+
+<script type="text/javascript">
+
+/*var star = {
+	initPos: [],
+	finalPos: [],
+	disSign: [-1, 1],
+	currentPos: [],
+	finish: false,
+	finishTime: 0,
+	v: 0,
+	a: 0 // 加速度
+	width: 10,
+	alpha:1
+}
+*/
+
+aniStars = function(cvs, ctx) {
+	var PI = Math.PI;
+
+	function AniStars() {
+		this.stars = [];
+		this.offCvs;
+		this.init();
+	}
+
+	AniStars.prototype.init = function() {
+		this.offCvs = document.createElement('canvas');
+
+		this.offCvs.width = this.offCvs.height = 50;
+		var offCtx = this.offCvs.getContext('2d');
+
+		offCtx.beginPath();
+		offCtx.fillStyle = '#ffffff';
+		offCtx.fillRect(0,0,50,50);
+		this.createStar();
+	}
+
+	AniStars.prototype.clock = function(detal) {
+		var now = (new Date).getTime(),
+			star;
+
+		for (var i = this.stars.length - 1; i >= 0; i--) {
+			star = this.stars[i];
+			if (star.finish && (now-star.finishTime) > 5000) {
+				this.stars.splice(i,1);
+				continue;
+			} else {
+				star.v += star.a * (detal/1000);
+				star.currentPos[0] += star.initPos[0] + (star.v*detal)*star.disSign[0];
+				star.currentPos[1] += star.initPos[1] + (star.v*detal)*star.disSign[1];
+				if (Math.abs(star.currentPos[0]-star.initPos) > Math.abs(star.finalPos[0]-star.initPos)) {
+					star.currentPos[0] = star.finalPos[0];
+					star.currentPos[1] = star.finalPos[1];
+					star.finish = true;
+					star.finishTime = now;
+				}
+				ctx.beginPath();
+				ctx.fillStyle = '#ffffff';
+				ctx.fillRect(star.currentPos[0],star.currentPos[1],5,5);	
+				console.log(star.initPos[0], (star.v*detal)*star.disSign[0]);			
+				//ctx.drawImage(this.offCvs, 0,0, star.width, star.width, star.currentPos[0], star.currentPos[1], star.width, star.width);
+			}
+		};
+	}
+
+
+	AniStars.prototype.createStar = function() {
+		if (this.stars.length > 1000) {
+			return;
+		}
+
+		var cw = cvs.width,
+			ch = cvs.height,
+			arcHeight = 200,
+			r = 600,
+			cx = (cw/2),
+			cy = (ch + r - arcHeight),
+			angle,
+			finalX,
+			finalY,
+			star;
+
+		for (var i = 0; i < 1; i++) {
+			angle = PI/2 + (Math.random() * 2 - 1) * PI/6;
+			finalX = cx + r*Math.cos(angle);
+			finalY = cy - r*Math.sin(angle);
+            
+            //console.log(angle, finalX, finalY);
+			star = {
+				initPos: [cx, cy],
+				finalPos: [finalX, finalY],
+				disSign: [(finalX-cx>0?1:-1), (finalY-cy>0?1:-1)],
+				currentPos: [cx, cy],
+				finish: false,
+				finishTime: 0,
+				v: 0,
+				a: Math.random() * 8, // 加速度
+				width: 10,
+				alpha:Math.random()
+			};			
+
+			//console.log(star)
+			this.stars.push(star);
+		}
+
+
+
+	}
+
+	return new AniStars();
+}
+
+var cvs = document.querySelectorAll('canvas')[0];
+var ctx = cvs.getContext('2d');
+
+time = {
+	ctx: ctx,
+	last: (new Date()).getTime(),
+	ani: 1,
+	timeBodys: [],
+	add: function(timeBody) {
+		time.timeBodys.push(timeBody);
+	},
+	remove: function(timeBody) {
+		var index = time.timeBodys.indexOf(timeBody); //console.log(index);
+
+		if (index !== -1)
+		time.timeBodys.splice(index, 1);
+	},
+	clock: function() {
+
+		var now = (new Date()).getTime()
+		detal = (now - time.last)/1000;  //frameInfo.innerHTML = parseInt(1000/(now - time.last));
+		time.last = now;
+
+		time.ctx.clearRect(0,0, cvs.width, cvs.height);
+		time.timeBodys.forEach(function(timeBody) {
+			time.ctx.save();
+			timeBody.clock(detal);
+			time.ctx.restore();
+		});
+		time.ani = window.requestAnimationFrame(time.clock);
+	}
+}
+time.clock();
+
+time.add(aniStars(cvs, ctx));
+	
+</script>	
+</body>
+</html>
