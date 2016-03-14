@@ -14,15 +14,14 @@ body {
 </style>
 </head>
 <body>
-
-<canvas width="800" height="400"></canvas>
-
-<script type="text/javascript">
+<div id="frameInfo"></div>
+<canvas width="1200" height="400"></canvas>
+10<script type="text/javascript">
 
 /*var star = {
 	initPos: [],
 	finalPos: [],
-	disSign: [-1, 1],
+	radio: [-1, 1],
 	currentPos: [],
 	finish: false,
 	finishTime: 0,
@@ -34,7 +33,13 @@ body {
 */
 
 aniStars = function(cvs, ctx) {
-	var PI = Math.PI;
+	var PI = Math.PI,
+		r = Math.random,
+		w = cvs.width,
+		h = cvs.height
+		cR = 1800,
+		cX = parseInt(w/2),
+		cY = h-200+1800;
 
 	function AniStars() {
 		this.stars = [];
@@ -56,18 +61,31 @@ aniStars = function(cvs, ctx) {
 
 	AniStars.prototype.clock = function(detal) {
 		var now = (new Date).getTime(),
+			percent = 0,
 			star;
 
 		for (var i = this.stars.length - 1; i >= 0; i--) {
 			star = this.stars[i];
-			if (star.finish && (now-star.finishTime) > 5000) {
-				this.stars.splice(i,1);
+			if (star.finish) {
+				if ((now-star.finishTime) > 3000) {
+					this.stars.splice(i,1);
+				} else {
+					ctx.beginPath();
+					ctx.fillStyle = '#ffffff';
+					ctx.fillRect(star.currentPos[0],star.currentPos[1],1,1);					
+				}
 				continue;
 			} else {
-				star.v += star.a * (detal/1000);
-				star.currentPos[0] += star.initPos[0] + (star.v*detal)*star.disSign[0];
-				star.currentPos[1] += star.initPos[1] + (star.v*detal)*star.disSign[1];
-				if (Math.abs(star.currentPos[0]-star.initPos) > Math.abs(star.finalPos[0]-star.initPos)) {
+				percentY = Math.abs(star.currentPos[1]-star.initPos[1])/Math.abs(star.totalDis[1]);
+				percentX = Math.abs(star.currentPos[0]-star.initPos[0])/Math.abs(star.totalDis[0]);
+
+				star.a += star.aa;
+				star.v += star.a * detal;
+				star.currentPos[0] += (star.v*detal)*star.radio[0];
+				star.currentPos[1] += (star.v*detal)*star.radio[1];
+				if (percentY>1||percentX>1) {
+					percentX = 1;
+					percentY = 1;
 					star.currentPos[0] = star.finalPos[0];
 					star.currentPos[1] = star.finalPos[1];
 					star.finish = true;
@@ -75,46 +93,56 @@ aniStars = function(cvs, ctx) {
 				}
 				ctx.beginPath();
 				ctx.fillStyle = '#ffffff';
-				ctx.fillRect(star.currentPos[0],star.currentPos[1],5,5);	
-				console.log(star.initPos[0], (star.v*detal)*star.disSign[0]);			
+				//ctx.arc(star.currentPos[0],star.currentPos[1],10-10*percentY,0,PI*2);ctx.fill();
+				ctx.fillRect(star.currentPos[0],star.currentPos[1],10-10*percentY,10-9*percentY);	
+				//console.log(star.currentPos, star.finalPos);			
 				//ctx.drawImage(this.offCvs, 0,0, star.width, star.width, star.currentPos[0], star.currentPos[1], star.width, star.width);
 			}
 		};
+
+		this.createStar();
+
+		// test
+		/*ctx.strokeStyle = '#ffffff';
+		ctx.beginPath();
+		ctx.arc(cX,cY,cR,0,PI*2);*/
+		ctx.stroke();
 	}
 
 
 	AniStars.prototype.createStar = function() {
-		if (this.stars.length > 1000) {
+		if (this.stars.length > 10000) {
 			return;
 		}
 
-		var cw = cvs.width,
-			ch = cvs.height,
-			arcHeight = 200,
-			r = 600,
-			cx = (cw/2),
-			cy = (ch + r - arcHeight),
-			angle,
-			finalX,
-			finalY,
+		var angle,
+			finalX,finalY,initX,initY,radioX,radioY,
+			totalDisX, totalDisY,
+			randomSign = Math.random()-0.5<0?-1:1,//随机正负数
 			star;
 
 		for (var i = 0; i < 1; i++) {
-			angle = PI/2 + (Math.random() * 2 - 1) * PI/6;
-			finalX = cx + r*Math.cos(angle);
-			finalY = cy - r*Math.sin(angle);
-            
-            //console.log(angle, finalX, finalY);
+			angle = PI/2 + randomSign * (Math.random() * 0.1 + 0.00);//console.log(angle-PI/2);
+			finalX = cX + cR*Math.cos(angle);
+			finalY = cY - cR*Math.sin(angle);
+			totalDisX = finalX-cX;
+			totalDisY = finalY-cY;
+			initY = totalDisY/1.13 + cY;
+			initX = totalDisX/1.13 + cX;
+			radioX = (finalX-cX)/cR;
+			radioY = (finalY-cY)/cR;
 			star = {
-				initPos: [cx, cy],
+				radio: [radioX, radioY],
 				finalPos: [finalX, finalY],
-				disSign: [(finalX-cx>0?1:-1), (finalY-cy>0?1:-1)],
-				currentPos: [cx, cy],
+				initPos: [initX, initY],
+				currentPos: [initX, initY],
+				totalDis: [finalX-initX, finalY-initY],
 				finish: false,
 				finishTime: 0,
 				v: 0,
-				a: Math.random() * 8, // 加速度
-				width: 10,
+				a: Math.random()*50, // 加速度
+				aa: 20, // 加速度的加速度。呵呵
+				width: 1,
 				alpha:Math.random()
 			};			
 
@@ -149,7 +177,7 @@ time = {
 	clock: function() {
 
 		var now = (new Date()).getTime()
-		detal = (now - time.last)/1000;  //frameInfo.innerHTML = parseInt(1000/(now - time.last));
+		detal = (now - time.last)/1000;  frameInfo.innerHTML = parseInt(1000/(now - time.last));
 		time.last = now;
 
 		time.ctx.clearRect(0,0, cvs.width, cvs.height);
@@ -158,6 +186,7 @@ time = {
 			timeBody.clock(detal);
 			time.ctx.restore();
 		});
+		//time.ani = setTimeout(time.clock, 100);
 		time.ani = window.requestAnimationFrame(time.clock);
 	}
 }
